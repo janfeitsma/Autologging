@@ -623,7 +623,6 @@ def traced(*args, **keywords):
         # may be decorating a class OR a function
         method_names = args[1:]
         exclude = keywords.get("exclude", False)
-
         def traced_decorator(class_or_fn):
             if isclass(class_or_fn):
                 # `@traced(logger)' or `@traced(logger, "method", ..)' class
@@ -1193,7 +1192,28 @@ class _FunctionTracingProxy(object):
             None,                # exc_info
             func=function.__name__))
 
-        value = function(*args, **keywords)
+        try:
+            value = function(*args, **keywords)
+        except Exception as e:
+            self._logger.handle(logging.LogRecord(
+                self._logger.name,   # name
+                logging.ERROR,       # level
+                self._func_filename, # pathname
+                self._func_lineno,   # lineno
+                "%r",                # msg
+                (e,),                # args
+                None,                # exc_info
+                func=function.__name__))
+            self._logger.handle(logging.LogRecord(
+                self._logger.name,   # name
+                TRACE,               # level
+                self._func_filename, # pathname
+                self._func_lineno,   # lineno
+                "RETURN ERROR",      # msg
+                None,                # args
+                None,                # exc_info
+                func=function.__name__))
+            raise
 
         self._logger.handle(logging.LogRecord(
             self._logger.name,   # name
