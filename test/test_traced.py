@@ -58,6 +58,7 @@ def sample_function():
     pass
 
 
+
 class TracedTest(unittest.TestCase):
     """Test the :func:`autologging.traced` decorator function."""
 
@@ -66,7 +67,8 @@ class TracedTest(unittest.TestCase):
         setattr(SampleClass, "method", _orig_method_method_descriptor)
 
     def test_traced_with_empty_args_is_equivalent_to_traced(self):
-        self.assertTrue(traced() is traced)
+        self.assertEqual(traced(), traced) # warning: for some reason this test case needs to run early, it can fail in context of nosetests3:
+        # AssertionError: <function traced at 0x7f2a20feac10> != <function traced at 0x7f2a21043af0>
 
     def test_traced_does_not_replace_class(self):
         self.assertTrue(traced(SampleClass) is SampleClass)
