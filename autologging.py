@@ -1182,48 +1182,29 @@ class _FunctionTracingProxy(object):
            ``yield`` and ``StopIteration`` tracing support.
 
         """
-        self._logger.handle(logging.LogRecord(
-            self._logger.name,   # name
-            TRACE,               # level
-            self._func_filename, # pathname
-            self._func_lineno,   # lineno
-            "CALL *%r **%r",     # msg
-            (args, keywords),    # args
-            None,                # exc_info
-            func=function.__name__))
+
+        def _handle(level, msg, args):
+            # wrapper around logger.handle, reducing code duplication
+            self._logger.handle(logging.LogRecord(
+                self._logger.name,   # name
+                level,               # level
+                self._func_filename, # pathname
+                self._func_lineno,   # lineno
+                msg,                 # msg
+                args,                # args
+                None,                # exc_info
+                func=function.__name__))
+
+        _handle(TRACE, "CALL *%r **%r", (args, keywords))
 
         try:
             value = function(*args, **keywords)
         except Exception as e:
-            self._logger.handle(logging.LogRecord(
-                self._logger.name,   # name
-                logging.ERROR,       # level
-                self._func_filename, # pathname
-                self._func_lineno,   # lineno
-                "%r",                # msg
-                (e,),                # args
-                None,                # exc_info
-                func=function.__name__))
-            self._logger.handle(logging.LogRecord(
-                self._logger.name,   # name
-                TRACE,               # level
-                self._func_filename, # pathname
-                self._func_lineno,   # lineno
-                "RETURN ERROR",      # msg
-                None,                # args
-                None,                # exc_info
-                func=function.__name__))
+            _handle(logging.ERROR, "%r", (e))
+            _handle(TRACE, "RETURN ERROR", None)
             raise
 
-        self._logger.handle(logging.LogRecord(
-            self._logger.name,   # name
-            TRACE,               # level
-            self._func_filename, # pathname
-            self._func_lineno,   # lineno
-            "RETURN %r",         # msg
-            (value,),            # args
-            None,                # exc_info
-            func=function.__name__))
+        _handle(TRACE, "RETURN %r", (value,))
 
         return (_GeneratorIteratorTracingProxy(function, value, self._logger)
                 if isgenerator(value) else value)
